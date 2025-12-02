@@ -111,8 +111,8 @@ def generate_report_text(df):
         f"Всього коментарів: {total}\n"
         f"Рейтинг: {avg_score:.2f} (-1..1)\n"
         f"Вердикт: {verdict}\n\n"
-        f"💚 Позитив: {pos} ({pos / total * 100:.1f}%)\n"
-        f"❤️ Негатив: {neg} ({neg / total * 100:.1f}%)\n"
+        f"💚 Позитивних коментарів: {pos} ({pos / total * 100:.1f}%)\n"
+        f"❤️ Негативних коментарів: {neg} ({neg / total * 100:.1f}%)\n"
     )
     return text
 
@@ -122,7 +122,7 @@ def generate_charts(df):
     sns.set_style("whitegrid")
     fig, axes = plt.subplots(1, 2, figsize=(12, 6))
 
-    # Pie Chart
+
     counts = df['Category'].value_counts()
     colors = {'Positive': '#66bb6a', 'Neutral': '#fff176', 'Negative': '#ef5350'}
     pie_colors = [colors.get(k, '#bdbdbd') for k in counts.index]
@@ -137,7 +137,7 @@ def generate_charts(df):
 
     plt.tight_layout()
 
-    # Зберігаємо в буфер (пам'ять), а не на диск
+
     buf = io.BytesIO()
     plt.savefig(buf, format='png')
     buf.seek(0)
@@ -158,14 +158,14 @@ def handle_message(message):
     video_id = extract_video_id(url)
 
     if not video_id:
-        bot.reply_to(message, "❌ Це не схоже на посилання YouTube. Спробуй ще раз.")
+        bot.reply_to(message, "Це не схоже на посилання YouTube. Спробуй ще раз.")
         return
 
-    # Відправляємо повідомлення "Чекайте"
+    # Відправляємо повідомлення
     status_msg = bot.reply_to(message, "⏳ Аналізую коментарі... Це займе хвилину.")
 
     # Отримуємо дані
-    df = get_data(video_id, max_results=40)  # 40 коментарів для швидкості
+    df = get_data(video_id, max_results=40)
 
     if df is not None and not df.empty:
         # 1. Текстовий звіт
@@ -176,17 +176,17 @@ def handle_message(message):
         photo = generate_charts(df)
         bot.send_photo(message.chat.id, photo)
 
-        # 3. CSV файл (бонус)
+        # 3. CSV файл
         csv_buffer = io.StringIO()
         df.to_csv(csv_buffer, index=False)
         csv_buffer.seek(0)
-        # Перетворюємо на байти для відправки
+
         csv_bytes = io.BytesIO(csv_buffer.getvalue().encode())
         csv_bytes.name = f"report_{video_id}.csv"
 
         bot.send_document(message.chat.id, csv_bytes, caption="📂 Детальна таблиця")
 
-        # Видаляємо повідомлення "Чекайте"
+
         bot.delete_message(message.chat.id, status_msg.message_id)
 
     else:
